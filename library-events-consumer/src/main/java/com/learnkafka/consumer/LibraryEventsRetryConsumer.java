@@ -21,6 +21,10 @@ public class LibraryEventsRetryConsumer {
     public void onMessage(ConsumerRecord<Integer,String> consumerRecord) throws JsonProcessingException {
 
         log.info("ConsumerRecord in Retry Consumer: {} ", consumerRecord );
+        //logging the headers produced by the retry producer
+        consumerRecord.headers()
+                        .forEach(header -> log.info("Key: {}, Value: {}", header.key(), new String(header.value())));
+
         libraryEventsService.processLibraryEvent(consumerRecord);
 
     }

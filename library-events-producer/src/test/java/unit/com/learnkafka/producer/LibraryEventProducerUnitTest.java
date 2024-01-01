@@ -68,7 +68,7 @@ public class LibraryEventProducerUnitTest {
 
         //when
 
-        var completableFuture1 = eventProducer.sendLibraryEvent_Approach2(TestUtil.libraryEventRecord());
+        var completableFuture1 = eventProducer.sendLibraryEventAsynchronousWithProducerRecord(TestUtil.libraryEventRecord());
 
         //eventProducer.sendLibraryEvent_Approach2(TestUtil.libraryEventRecord()).get();
         var exception = assertThrows(Exception.class, completableFuture1::get);
@@ -93,7 +93,7 @@ public class LibraryEventProducerUnitTest {
         when(kafkaTemplate.send(isA(ProducerRecord.class))).thenReturn(future);
         //when
 
-        var completableFuture = eventProducer.sendLibraryEvent_Approach2(libraryEvent);
+        var completableFuture = eventProducer.sendLibraryEventAsynchronousWithProducerRecord(libraryEvent);
 
         //then
         SendResult<Integer, String> sendResult1 = completableFuture.get();

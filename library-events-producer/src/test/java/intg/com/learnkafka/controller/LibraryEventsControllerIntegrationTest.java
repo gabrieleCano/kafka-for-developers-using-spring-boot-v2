@@ -28,6 +28,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+// To run a test with an embedded Kafka broker
 @EmbeddedKafka(topics = {"library-events"}, partitions = 3)
 @TestPropertySource(properties = {"spring.kafka.producer.bootstrap-servers=${spring.embedded.kafka.brokers}",
         "spring.kafka.admin.properties.bootstrap.servers=${spring.embedded.kafka.brokers}"})
@@ -36,6 +37,7 @@ public class LibraryEventsControllerIntegrationTest {
     @Autowired
     TestRestTemplate restTemplate;
 
+    // To run a test with an embedded Kafka broker
     @Autowired
     EmbeddedKafkaBroker embeddedKafkaBroker;
 

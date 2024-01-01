@@ -40,10 +40,10 @@ public class LibraryEventsConsumerConfig {
     KafkaProperties kafkaProperties;
 
     @Autowired
-    KafkaTemplate kafkaTemplate;
+    FailureService failureService;
 
     @Autowired
-    FailureService failureService;
+    KafkaTemplate kafkaTemplate;
 
     @Value("${topics.retry:library-events.RETRY}")
     private String retryTopic;
@@ -53,6 +53,7 @@ public class LibraryEventsConsumerConfig {
 
 
     public DeadLetterPublishingRecoverer publishingRecoverer() {
+        //Publishing failed records to differents topic to retry them or to send them to a dead letter queue (for tracking purposes)
 
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate
                 , (r, e) -> {
@@ -84,16 +85,13 @@ public class LibraryEventsConsumerConfig {
 
     public DefaultErrorHandler errorHandler() {
 
-        var exceptiopnToIgnorelist = List.of(
-                IllegalArgumentException.class
-        );
-
+        //Algoritmo di backoff esponenziale binario per pilotare i tempi di retry
         ExponentialBackOffWithMaxRetries expBackOff = new ExponentialBackOffWithMaxRetries(2);
         expBackOff.setInitialInterval(1_000L);
         expBackOff.setMultiplier(2.0);
         expBackOff.setMaxInterval(2_000L);
 
-        var fixedBackOff = new FixedBackOff(1000L, 2L);
+        var fixedBackOff = new FixedBackOff(1000L, 2L); //max 2 retry attempts for each failed record, wait 1 sec between each retry
 
         /**
          * Just the Custom Error Handler
@@ -106,14 +104,28 @@ public class LibraryEventsConsumerConfig {
 
         var defaultErrorHandler = new DefaultErrorHandler(
                 //consumerRecordRecoverer
-                publishingRecoverer()
+                publishingRecoverer() //defining the recoverer to send the failed records to a different topic
                 ,
+                //select one between the fixedBackOff and expBackOff
                 fixedBackOff
                 //expBackOff
         );
 
+        //Adding Exception List to avoid retry
+        var exceptiopnToIgnorelist = List.of(
+                IllegalArgumentException.class
+        );
+
         exceptiopnToIgnorelist.forEach(defaultErrorHandler::addNotRetryableExceptions);
 
+        //Adding Exception List to retry, commented to handle all other exceptions
+        //var exceptiopnToRetrylist = List.of(
+        //        RecoverableDataAccessException.class
+        //);
+        //
+        //exceptiopnToRetrylist.forEach(defaultErrorHandler::addRetryableExceptions);
+
+        //For each retry attempt, this listener will be called and print the exception and deliveryAttempt
         defaultErrorHandler.setRetryListeners(
                 (record, ex, deliveryAttempt) ->
                         log.info("Failed Record in Retry Listener  exception : {} , deliveryAttempt : {} ", ex.getMessage(), deliveryAttempt)
@@ -130,8 +142,19 @@ public class LibraryEventsConsumerConfig {
         ConcurrentKafkaListenerContainerFactory<Object, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
         configurer.configure(factory, kafkaConsumerFactory
                 .getIfAvailable(() -> new DefaultKafkaConsumerFactory<>(this.kafkaProperties.buildConsumerProperties())));
-        factory.setConcurrency(3);
-        factory.setCommonErrorHandler(errorHandler());
+        factory.setConcurrency(3); //necessary only in non-cloud-like or non-kubernetes environment
+        factory.setCommonErrorHandler(errorHandler()); //Error Handler
         return factory;
     }
+
+    // Manual Commit configuration
+    //@Bean
+    //ConcurrentKafkaListenerContainerFactory<?, ?> kafkaListenerContainerFactory(
+    //        ConcurrentKafkaListenerContainerFactoryConfigurer configurer,
+    //        ConsumerFactory<Object, Object> kafkaConsumerFactory) {
+    //    ConcurrentKafkaListenerContainerFactory<Object, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    //    configurer.configure(factory, kafkaConsumerFactory);
+    //    factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL);
+    //    return factory;
+    //}
 }

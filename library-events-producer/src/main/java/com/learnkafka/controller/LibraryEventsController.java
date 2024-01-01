@@ -28,7 +28,7 @@ public class LibraryEventsController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Only NEW event type is supported");
         }
         //invoke kafka producer
-        libraryEventProducer.sendLibraryEvent_Approach2(libraryEvent);
+        libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(libraryEvent);
         //libraryEventProducer.sendLibraryEvent(libraryEvent);
         return ResponseEntity.status(HttpStatus.CREATED).body(libraryEvent);
     }
@@ -41,7 +41,7 @@ public class LibraryEventsController {
         ResponseEntity<String> BAD_REQUEST = validateLibraryEvent(libraryEvent);
         if (BAD_REQUEST != null) return BAD_REQUEST;
 
-        libraryEventProducer.sendLibraryEvent_Approach2(libraryEvent);
+        libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(libraryEvent);
         log.info("after produce call");
         return ResponseEntity.status(HttpStatus.OK).body(libraryEvent);
     }

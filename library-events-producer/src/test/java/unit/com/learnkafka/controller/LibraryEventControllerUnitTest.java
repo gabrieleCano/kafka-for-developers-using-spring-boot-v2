@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// Test Slice
 @WebMvcTest(LibraryEventsController.class)
 @AutoConfigureMockMvc
 public class LibraryEventControllerUnitTest {
@@ -26,7 +27,8 @@ public class LibraryEventControllerUnitTest {
     @Autowired
     MockMvc mockMvc;
 
-    ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired
+    ObjectMapper objectMapper;
 
     @MockBean
     LibraryEventProducer libraryEventProducer;
@@ -38,7 +40,7 @@ public class LibraryEventControllerUnitTest {
         LibraryEvent libraryEvent = TestUtil.libraryEventRecord();
 
         String json = objectMapper.writeValueAsString(libraryEvent);
-        when(libraryEventProducer.sendLibraryEvent_Approach2(isA(LibraryEvent.class))).thenReturn(null);
+        when(libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(isA(LibraryEvent.class))).thenReturn(null);
 
         //expect
         mockMvc.perform(post("/v1/libraryevent")
@@ -55,7 +57,7 @@ public class LibraryEventControllerUnitTest {
         LibraryEvent libraryEvent = TestUtil.libraryEventRecordWithInvalidBook();
 
         String json = objectMapper.writeValueAsString(libraryEvent);
-        when(libraryEventProducer.sendLibraryEvent_Approach2(isA(LibraryEvent.class))).thenReturn(null);
+        when(libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(isA(LibraryEvent.class))).thenReturn(null);
         //expect
         String expectedErrorMessage = "book.bookId - must not be null, book.bookName - must not be blank";
         mockMvc.perform(post("/v1/libraryevent")
@@ -73,7 +75,7 @@ public class LibraryEventControllerUnitTest {
 
 
         String json = objectMapper.writeValueAsString(TestUtil.libraryEventRecordUpdate());
-        when(libraryEventProducer.sendLibraryEvent_Approach2(isA(LibraryEvent.class))).thenReturn(null);
+        when(libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(isA(LibraryEvent.class))).thenReturn(null);
 
         //expect
         mockMvc.perform(
@@ -90,7 +92,7 @@ public class LibraryEventControllerUnitTest {
         //given
 
         String json = objectMapper.writeValueAsString(TestUtil.libraryEventRecordUpdateWithNullLibraryEventId());
-        when(libraryEventProducer.sendLibraryEvent_Approach2(isA(LibraryEvent.class))).thenReturn(null);
+        when(libraryEventProducer.sendLibraryEventAsynchronousWithProducerRecord(isA(LibraryEvent.class))).thenReturn(null);
 
         //expect
         mockMvc.perform(
